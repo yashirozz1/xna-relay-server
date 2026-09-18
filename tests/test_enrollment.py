@@ -89,6 +89,21 @@ class EnrollmentTests(unittest.TestCase):
 
 
 class GatewayTests(unittest.TestCase):
+    @unittest.skipUnless(os.name == 'posix' and shutil.which('systemd-analyze'), 'systemd validator')
+    def test_maintenance_timer_and_service_have_valid_settings(self):
+        from fleet.enroll_setup import maintenance_units, UNIT
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            units = maintenance_units(root / 'private', root / 'release')
+            units['xna-dual-bootstrap.service'] = UNIT
+            paths = []
+            for name, content in units.items():
+                path = root / name
+                path.write_text(content)
+                paths.append(str(path))
+            result = subprocess.run(['systemd-analyze', 'verify', *paths], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_source_snapshot_preserves_previous_installer_version(self):
         from fleet import enroll_setup
         with tempfile.TemporaryDirectory() as folder:

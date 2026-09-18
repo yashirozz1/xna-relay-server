@@ -132,7 +132,7 @@ def snapshot(base):
     return destination
 
 
-def install_maintenance(base, release):
+def maintenance_units(base, release):
     service = f'''# Managed by XNA mining enrollment
 [Unit]
 Description=XNA relay certificate revocation list renewal
@@ -141,7 +141,7 @@ After=network-online.target prl-fleet.service
 [Service]
 Type=oneshot
 User=root
-WorkingDirectory={json.dumps(str(release))}
+WorkingDirectory={str(release).replace('%', '%%')}
 ExecStart=/usr/bin/python3 -m fleet.azure_provision --base-dir {json.dumps(str(base))} --maintain
 UMask=0077
 '''
@@ -157,13 +157,18 @@ Persistent=true
 [Install]
 WantedBy=timers.target
 '''
-    for name, content in [('xna-relay-maintenance.service', service), ('xna-relay-maintenance.timer', timer)]:
+    return {'xna-relay-maintenance.service': service, 'xna-relay-maintenance.timer': timer}
+
+
+def install_maintenance(base, release):
+    for name, content in maintenance_units(base, release).items():
         path = regular('/etc/systemd/system/' + name)
         if path.exists() and not path.read_text().startswith('# Managed by XNA mining enrollment\n'):
             raise ValueError('unmanaged maintenance unit already exists')
         write_private(path, content.encode())
     subprocess.run(['systemctl', 'daemon-reload'], check=True)
     subprocess.run(['systemctl', 'enable', '--now', 'xna-relay-maintenance.timer'], check=True)
+    subprocess.run(['systemctl', 'is-active', '--quiet', 'xna-relay-maintenance.timer'], check=True)
 
 
 def setup(base, output, account, reserve=10, relay_port=22, authorized=None, host_public=None):
