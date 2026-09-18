@@ -1,0 +1,29 @@
+# TLS passthrough: do not add ssl termination here.
+global
+    log stdout format raw local0
+    maxconn 64
+
+defaults
+    mode tcp
+    log global
+    option tcplog
+    timeout connect 5s
+    timeout client 10m
+    timeout server 10m
+
+resolvers system_dns
+    parse-resolv-conf
+    resolve_retries 3
+    timeout resolve 2s
+    timeout retry 1s
+    hold valid 30s
+    hold obsolete 30s
+
+frontend private_relay
+    bind 0.0.0.0:${relay_port}
+    maxconn 32
+    tcp-request connection reject if !{ src ${client_ip}/32 }
+    default_backend fixed_pool
+
+backend fixed_pool
+    server pool ${pool_host}:${pool_port} resolvers system_dns resolve-prefer ipv4 init-addr last,libc,none

@@ -1,0 +1,40 @@
+[Unit]
+Description=PRL fleet read-only traffic API
+Wants=prl-fleet.service
+After=network-online.target prl-fleet.service
+
+[Service]
+Type=simple
+User=prl-monitor
+Group=prl-monitor
+SupplementaryGroups=prl-metrics
+WorkingDirectory=/opt/prl-monitor
+StateDirectory=prl-monitor
+StateDirectoryMode=0700
+Environment=PRL_REGISTRY=/etc/prl-monitor/registry.json
+Environment=PRL_STATS_SOCKET=/run/prl-fleet/stats.sock
+Environment=PRL_DB=/var/lib/prl-monitor/metrics.sqlite3
+Environment=PRL_TOKEN_FILE=/etc/prl-monitor/api-token
+Environment=PRL_SAMPLE_SECONDS=15
+Environment=PRL_RETENTION_HOURS=72
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/prl-monitor/venv/bin/uvicorn --factory monitor.app:create_app --host 127.0.0.1 --port 18080 --workers 1 --no-access-log --no-proxy-headers
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

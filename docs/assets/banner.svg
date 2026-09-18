@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="330" viewBox="0 0 1200 330" role="img" aria-labelledby="title desc">
+  <title id="title">XNA Relay Server</title>
+  <desc id="desc">Transporte autenticado. Frota conectada. Identidades individuais e métricas por cliente.</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#0b1326"/><stop offset="1" stop-color="#101c32"/></linearGradient>
+    <linearGradient id="accent"><stop stop-color="#22d3ee"/><stop offset="1" stop-color="#818cf8"/></linearGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#26354c" stroke-opacity=".4"/></pattern>
+  </defs>
+  <rect width="1200" height="330" rx="18" fill="url(#bg)"/>
+  <rect width="1200" height="330" rx="18" fill="url(#grid)"/>
+  <path d="M0 329H1200" stroke="url(#accent)" stroke-width="4"/>
+  <rect x="52" y="42" width="226" height="28" rx="14" fill="#103142"/>
+  <circle cx="69" cy="56" r="4" fill="#34d399"/>
+  <text x="83" y="61" font-family="monospace" font-size="12" letter-spacing="1.3" fill="#67e8f9">FLEET INFRASTRUCTURE</text>
+  <text x="52" y="152" font-family="Arial, sans-serif" font-size="70" font-weight="800" letter-spacing="-3" fill="#f1f5f9">XNA <tspan fill="#67e8f9">RELAY</tspan></text>
+  <text x="55" y="194" font-family="Arial, sans-serif" font-size="23" fill="#cbd5e1">Transporte autenticado. Frota conectada.</text>
+  <text x="55" y="261" font-family="monospace" font-size="13" fill="#94a3b8">mTLS POR CLIENTE    /    API DE TRÁFEGO    /    UBUNTU 24.04</text>
+  <g stroke="url(#accent)" stroke-width="2" fill="none"><path d="M790 90H848V160H910M790 160H910M790 230H848V160M996 160H1085"/></g>
+  <g fill="#14263c" stroke="#42647c"><rect x="730" y="66" width="65" height="48" rx="8"/><rect x="730" y="136" width="65" height="48" rx="8"/><rect x="730" y="206" width="65" height="48" rx="8"/><rect x="1070" y="136" width="65" height="48" rx="8"/></g>
+  <rect x="906" y="117" width="90" height="86" rx="17" fill="#123448" stroke="#67e8f9" stroke-width="2"/>
+  <path d="M951 137L970 145V160C970 173 951 183 951 183S932 173 932 160V145Z" fill="none" stroke="#67e8f9" stroke-width="2"/>
+  <path d="M942 158L949 165L961 151" fill="none" stroke="#34d399" stroke-width="3"/>
+  <g font-family="monospace" font-size="12" text-anchor="middle" fill="#94a3b8"><text x="762" y="96">VM</text><text x="762" y="166">VM</text><text x="762" y="236">VM</text><text x="1102" y="166">POOL</text><text x="951" y="229">RELAY</text></g>
+</svg>

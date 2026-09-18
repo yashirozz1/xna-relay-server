@@ -1,0 +1,47 @@
+{
+  "clients": 300,
+  "cpu_affinity": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "host": "6.6.114.1-microsoft-standard-WSL2",
+  "cycles": [
+    {
+      "cycle": 1,
+      "active_connections": 300,
+      "all_connected_seconds": 0.706,
+      "handshake_and_first_echo_p95_ms": 433.7,
+      "echo_p95_ms_including_handshake": 148.91,
+      "verified_exchanges": 5100,
+      "duration_seconds": 17.048,
+      "cpu_percent_one_core": {
+        "haproxy": 5.57,
+        "stunnel_clients": 17.01,
+        "monitor": 0.94
+      }
+    },
+    {
+      "cycle": 2,
+      "active_connections": 300,
+      "all_connected_seconds": 0.379,
+      "handshake_and_first_echo_p95_ms": 104.86,
+      "echo_p95_ms_including_handshake": 62.44,
+      "verified_exchanges": 5100,
+      "duration_seconds": 16.643,
+      "cpu_percent_one_core": {
+        "haproxy": 4.81,
+        "stunnel_clients": 9.73,
+        "monitor": 0.9
+      }
+    }
+  ],
+  "max_rss_mib": {
+    "haproxy": 35.28,
+    "stunnel_clients": 117.37,
+    "monitor": 47.84
+  },
+  "panel_https_p95_ms": 110.1,
+  "limitation": "Local synthetic TLS echo traffic; clients and pool share CPU with relay. Fresh metrics DB. Not Contabo or real mining traffic."
+}

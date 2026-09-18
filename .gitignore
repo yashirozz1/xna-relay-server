@@ -1,0 +1,53 @@
+# Local tooling and editor state
+.tools/
+.worklane/
+.worktrees/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Python environments and caches
+.venv*/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage*
+htmlcov/
+*.egg-info/
+
+# Generated deployment bundles and archives
+/build/
+/dist/
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# Local configuration, certificates and credentials
+.env
+.env.*
+!.env.example
+.private/
+/pki/
+/secrets/
+*.pem
+*.key
+*.crt
+*.csr
+*.p12
+*.pfx
+api-token
+*.local.json
+
+# Runtime data and logs
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+*.log
+*.pid
+*.sock
+*.tmp

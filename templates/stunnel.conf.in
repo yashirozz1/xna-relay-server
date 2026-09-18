@@ -1,0 +1,18 @@
+# TLS is verified against the POOL identity, never the relay IP.
+foreground = yes
+pid =
+debug = notice
+
+[pool]
+client = yes
+accept = 127.0.0.1:${local_port}
+connect = ${relay_ip}:${relay_port}
+CAfile = /etc/ssl/certs/ca-certificates.crt
+verifyChain = yes
+checkHost = ${pool_host}
+sni = ${pool_host}
+sslVersionMin = TLSv1.2
+TIMEOUTconnect = 5
+TIMEOUTbusy = 10
+TIMEOUTidle = 600
+TIMEOUTclose = 5

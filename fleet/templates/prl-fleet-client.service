@@ -1,0 +1,29 @@
+[Unit]
+Description=PRL authenticated pool TLS over fleet mTLS
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=prl-fleet-client
+Group=prl-fleet-client
+ExecStart=/usr/bin/stunnel4 /etc/prl-fleet-client/stunnel.conf
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

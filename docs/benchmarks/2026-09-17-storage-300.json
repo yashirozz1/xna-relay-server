@@ -1,0 +1,18 @@
+{
+  "clients": 300,
+  "history_hours": 72,
+  "sample_seconds": 15,
+  "seeded_rows": 5184000,
+  "seed_seconds": 36.3,
+  "latest_samples_ms": [
+    415.61,
+    403.62,
+    391.85
+  ],
+  "record_success_ms": 431.17,
+  "database_mib": 990.5,
+  "seed_database_and_wal_mib": 1988.63,
+  "expired_rows_removed": 300,
+  "synthetic_epoch": "HAProxy|2.8.16-0ubuntu0.24.04.3|1|123456|1700000000|",
+  "limitation": "Synthetic counters in temporary local SQLite; not Contabo disk performance."
+}

@@ -1,0 +1,13 @@
+{
+  "relay_ip": "203.0.113.10",
+  "relay_port": 18443,
+  "api_port": 18444,
+  "pool_host": "prl.kryptex.network",
+  "pool_port": 8048,
+  "max_connections": 2048,
+  "max_connections_per_instance": 8,
+  "instances": [
+    {"id": "gpu001", "label": "GPU 001", "allowed_ip": null},
+    {"id": "gpu002", "label": "GPU 002", "allowed_ip": null}
+  ]
+}
