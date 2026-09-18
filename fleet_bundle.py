@@ -23,7 +23,7 @@ def integer(value, name, minimum, maximum):
 def validate_manifest(data):
     defaults = dict(relay_port=18443, api_port=18444, pool_host='prl.kryptex.network',
                     pool_port=8048, max_connections=2048, max_connections_per_instance=8)
-    allowed = set(defaults) | {'relay_ip', 'instances'}
+    allowed = set(defaults) | {'relay_ip', 'instances', 'xmr_pool_host', 'xmr_pool_port'}
     if not isinstance(data, dict) or set(data) - allowed:
         raise ValueError('manifesto invalido ou campos desconhecidos')
     result = defaults | data
@@ -37,6 +37,14 @@ def validate_manifest(data):
     if result['relay_port'] == result['api_port'] or 18080 in (result['relay_port'], result['api_port']):
         raise ValueError('portas relay/API precisam ser distintas e nao podem usar 18080')
     integer(result['pool_port'], 'pool_port', 1, 65535)
+    if 'xmr_pool_host' in result or 'xmr_pool_port' in result:
+        if not {'xmr_pool_host', 'xmr_pool_port'} <= result.keys():
+            raise ValueError('informe xmr_pool_host e xmr_pool_port juntos')
+        try:
+            result['xmr_pool_host'] = hostname(result['xmr_pool_host'])
+        except (TypeError, argparse.ArgumentTypeError) as exc:
+            raise ValueError(f'hostname XMR invalido: {exc}') from exc
+        integer(result['xmr_pool_port'], 'xmr_pool_port', 1, 65535)
     integer(result['max_connections'], 'max_connections', 16, 65536)
     integer(result['max_connections_per_instance'], 'max_connections_per_instance', 1, 128)
     instances = result.get('instances')
@@ -99,8 +107,12 @@ def render_haproxy(manifest, config_dir='/etc/prl-fleet', runtime_dir='/run/prl-
     for i in m['instances']:
         lines.append(f'    use_backend pool_{i["id"]} if {{ ssl_c_s_dn(CN) -m str {i["id"]} }}')
     for i in m['instances']:
-        lines += ['', f'backend pool_{i["id"]}',
-                  f'    server pool {m["pool_host"]}:{m["pool_port"]} resolvers system_dns resolve-prefer ipv4 init-addr last,libc,none']
+        lines += ['', f'backend pool_{i["id"]}']
+        if 'xmr_pool_host' in m:
+            lines += [f'    tcp-request content reject if {{ ssl_fc_sni -i xmr.relay.prl.internal }} !{{ srv_is_up(pool_{i["id"]}/xmr) }}',
+                      '    use-server xmr if { ssl_fc_sni -i xmr.relay.prl.internal }',
+                      f'    server xmr {m["xmr_pool_host"]}:{m["xmr_pool_port"]} weight 0 resolvers system_dns resolve-prefer ipv4 init-addr last,libc,none']
+        lines += [f'    server pool {m["pool_host"]}:{m["pool_port"]} resolvers system_dns resolve-prefer ipv4 init-addr last,libc,none']
     lines += [
         '', 'frontend monitor_https', '    mode http', '    maxconn 32',
         f'    bind 0.0.0.0:{m["api_port"]} ssl crt {config_dir}/server.pem ca-file {config_dir}/ca.crt crl-file {config_dir}/crl.pem verify required',

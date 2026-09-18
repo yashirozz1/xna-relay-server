@@ -4,7 +4,7 @@ import unittest
 import tempfile
 import json
 
-from fleet_bundle import generate
+from fleet_bundle import generate, render_haproxy
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -57,6 +57,24 @@ class ManifestTests(unittest.TestCase):
         data['instances'][0]['label'] = 'a\nb'
         with self.assertRaises(ValueError):
             self.validate(data)
+
+    def test_optional_xmr_destination_requires_complete_valid_pair(self):
+        for extra in ({'xmr_pool_host': 'xmr.kryptex.network'}, {'xmr_pool_port': 8029},
+                      {'xmr_pool_host': 'bad\nhost', 'xmr_pool_port': 8029},
+                      {'xmr_pool_host': 'xmr.kryptex.network', 'xmr_pool_port': 0}):
+            with self.subTest(extra=extra), self.assertRaises(ValueError):
+                self.validate(self.base() | extra)
+        valid = self.validate(self.base() | {'xmr_pool_host': 'xmr.kryptex.network', 'xmr_pool_port': 8029})
+        self.assertEqual(valid['xmr_pool_port'], 8029)
+
+    def test_xmr_is_explicitly_selected_and_never_in_default_pool_rotation(self):
+        original = render_haproxy(self.base())
+        self.assertNotIn('use-server', original)
+        dual = render_haproxy(self.base() | {'xmr_pool_host': 'xmr.kryptex.network', 'xmr_pool_port': 8029})
+        self.assertIn('use-server xmr if { ssl_fc_sni -i xmr.relay.prl.internal }', dual)
+        self.assertIn('server xmr xmr.kryptex.network:8029 weight 0', dual)
+        self.assertIn('server pool prl.kryptex.network:8048', dual)
+        self.assertIn('tcp-request session reject unless known_client', dual)
 
 
 class BundleTests(unittest.TestCase):

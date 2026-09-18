@@ -1,0 +1,15 @@
+{
+  "relay_ip": "203.0.113.10",
+  "relay_port": 18443,
+  "api_port": 18444,
+  "pool_host": "prl.kryptex.network",
+  "pool_port": 8048,
+  "xmr_pool_host": "xmr.kryptex.network",
+  "xmr_pool_port": 8029,
+  "max_connections": 2048,
+  "max_connections_per_instance": 8,
+  "instances": [
+    {"id": "gpu0001", "label": "GPU 0001", "allowed_ip": null},
+    {"id": "gpu0002", "label": "GPU 0002", "allowed_ip": null}
+  ]
+}

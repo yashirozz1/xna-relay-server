@@ -21,6 +21,7 @@ from integration import ROOT, ENV, free_port, run
 sys.path.insert(0, str(ROOT))
 from fleet.pki import init_pki, issue_client, revoke_client
 from fleet_bundle import generate, render_client, render_haproxy
+from dual_bundle import generate_dual, verify_credentials
 from monitor.haproxy import HAProxyStatsClient
 
 
@@ -75,9 +76,10 @@ class FleetTests(unittest.TestCase):
 
     @contextlib.contextmanager
     def stack(self, *, client_cert=None, pool_identity='localhost.test',
-              trusted_pool=True, allowed_ip=None, pool_down=False):
+              trusted_pool=True, allowed_ip=None, pool_down=False, dual=False, xmr_disabled=False):
         processes, logs = [], []
         echo = EchoServer(self.cert, self.key)
+        xmr = EchoServer(self.cert, self.key) if dual else None
         try:
             with tempfile.TemporaryDirectory(dir=self.directory) as temporary:
                 path = Path(temporary)
@@ -89,18 +91,27 @@ class FleetTests(unittest.TestCase):
                             'api_port': api_port, 'pool_host': 'localhost.test',
                             'pool_port': echo.server_address[1],
                             'instances': [{'id': 'gpu01', 'allowed_ip': allowed_ip}, {'id': 'gpu02'}]}
+                if dual:
+                    manifest.update(xmr_pool_host='localhost.test', xmr_pool_port=xmr.server_address[1])
                 bundle = generate(manifest, self.pki, path / 'bundle')
                 cfg = bundle / 'relay/haproxy.cfg'
                 cfg.write_text(render_haproxy(manifest, bundle / 'relay', path, socket_group='')
                                .replace('0.0.0.0:', '127.0.0.1:')
                                .replace(f'localhost.test:{manifest["pool_port"]}', f'127.0.0.1:{manifest["pool_port"]}')
                                .replace('127.0.0.1:18080', f'127.0.0.1:{monitor_port}'))
+                if dual:
+                    cfg.write_text(cfg.read_text().replace(f'localhost.test:{xmr.server_address[1]}',
+                                                          f'127.0.0.1:{xmr.server_address[1]}'))
+                if xmr_disabled:
+                    cfg.write_text(cfg.read_text().replace(' weight 0 resolvers', ' weight 0 disabled resolvers'))
                 commands = [[self.haproxy, '-db', '-f', str(cfg)]]
                 for identity, local, bridge in (('gpu01', local1, bridge1), ('gpu02', local2, bridge2)):
                     client = bundle / 'clients' / identity
                     text = render_client(manifest | {'pool_host': pool_identity}, client, local, bridge)
                     text = text.replace('/etc/ssl/certs/ca-certificates.crt',
                                         str(self.ca if trusted_pool else self.other_ca))
+                    if dual and identity == 'gpu02':
+                        text = text.replace('sni = relay.prl.internal', 'sni = xmr.relay.prl.internal')
                     (client / 'stunnel.conf').write_text(text)
                     if identity == 'gpu01' and client_cert:
                         (client / 'client.pem').write_bytes(Path(client_cert).read_bytes())
@@ -136,7 +147,7 @@ class FleetTests(unittest.TestCase):
                 if pool_down:
                     echo.close()
                 yield {'locals': (local1, local2), 'relay': relay_port, 'api': api_port,
-                       'bundle': bundle, 'echo': echo, 'socket': path / 'stats.sock',
+                       'bundle': bundle, 'echo': echo, 'xmr': xmr, 'socket': path / 'stats.sock',
                        'relay_process': processes[0],
                        'token': (bundle / 'panel/api-token').read_text().strip()}
         except Exception:
@@ -158,6 +169,8 @@ class FleetTests(unittest.TestCase):
             for log in logs:
                 log.close()
             echo.close()
+            if xmr:
+                xmr.close()
 
     def context(self, cert=None):
         tls = ssl.create_default_context(cafile=str(self.pki / 'ca.crt'))
@@ -233,6 +246,39 @@ class FleetTests(unittest.TestCase):
             self.assertEqual(self.request(stack, '/openapi.json')[0], 200)
             with self.assertRaises((OSError, http.client.HTTPException)):
                 self.request(stack, identity=None)
+
+    def test_dual_sni_routes_to_distinct_tls_pools(self):
+        with self.stack(dual=True) as stack:
+            for _ in range(3):
+                self.exchange(stack['locals'][0], b'PRL payload')
+                self.exchange(stack['locals'][1], b'XMR payload')
+            self.assertEqual(b''.join(stack['echo'].payloads), b'PRL payload' * 3)
+            self.assertEqual(b''.join(stack['xmr'].payloads), b'XMR payload' * 3)
+            counters = HAProxyStatsClient(stack['socket']).collect({'gpu01', 'gpu02'}).counters
+            self.assertEqual(set(counters), {'gpu01', 'gpu02'})
+
+    def test_dual_bundle_real_certificate_and_wrong_identity_rejection(self):
+        with tempfile.TemporaryDirectory(dir=self.directory) as temporary:
+            path = Path(temporary)
+            manifest = {'relay_ip': '127.0.0.1', 'instances': [{'id': 'gpu01'}, {'id': 'gpu02'}],
+                        'xmr_pool_host': 'xmr.kryptex.network', 'xmr_pool_port': 8029}
+            fleet = generate(manifest, self.pki, path / 'fleet')
+            output = generate_dual(fleet, 'gpu01', 'krxYZDM8VP', path / 'dual')
+            self.assertLess((output / 'cloud-init.yaml').stat().st_size, 65536)
+            verify_credentials(output, 'gpu01')
+            with self.assertRaisesRegex(ValueError, 'CN'):
+                verify_credentials(output, 'gpu02')
+            (output / 'client.pem').write_bytes((self.foreign / 'clients/gpu01.pem').read_bytes())
+            with self.assertRaises(ValueError):
+                verify_credentials(output, 'gpu01')
+
+    def test_xmr_unavailable_never_falls_back_to_prl(self):
+        with self.stack(dual=True, xmr_disabled=True) as stack:
+            self.exchange(stack['locals'][0], b'PRL still works')
+            with self.assertRaises((OSError, AssertionError)):
+                self.exchange(stack['locals'][1], b'XMR must not reach PRL')
+            self.assertEqual(b''.join(stack['echo'].payloads), b'PRL still works')
+            self.assertEqual(stack['xmr'].payloads, [])
 
     def test_relay_rejects_missing_certificate(self):
         with self.stack() as stack:
