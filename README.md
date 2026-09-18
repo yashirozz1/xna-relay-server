@@ -10,6 +10,7 @@
 </p>
 
 <p align="center">
+  <a href="docs/AUTOMATIC-MINING.md">Mineração automática</a> ·
   <a href="docs/AZURE-DUAL.md">Azure: PRL GPU + XMR CPU</a> ·
   <a href="docs/FLEET.md">Instalação</a> ·
   <a href="docs/MONITOR-API.md">API do painel</a> ·

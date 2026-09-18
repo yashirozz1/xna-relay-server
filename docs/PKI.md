@@ -61,14 +61,17 @@ python3 -m fleet.pki refresh-crl /secure/prl-pki
 This preserves revocations, signs a new CRL and advances its serial number. Copy
 the renewed file to `/etc/prl-fleet/crl.pem` (root:prl-fleet, 0640), validate the
 HAProxy configuration and restart `prl-fleet`. Restarting disconnects established
-sessions too; clients reconnect briefly. Schedule renewal in your operational
-calendar; this offline operation is not automatically run on the VPS.
+sessions too; clients reconnect briefly. Without the automatic enrollment setup,
+schedule this offline renewal in your operational calendar. The setup described
+in [AUTOMATIC-MINING.md](AUTOMATIC-MINING.md) installs a daily renewal timer.
 
 Issuance, revocation and CRL renewal use the same authority lock. A concurrent
-operation is refused before reading or changing authority state. If the process
-is forcibly killed, `.operation-lock` may remain in the PKI directory. Confirm
-that no PKI process is active before removing that empty directory with `rmdir`
-and retrying. Do not remove a lock held by an active operation.
+operation is refused before reading or changing authority state. On Linux, the
+kernel releases the directory lock if the process exits or is killed. Use the
+current tooling for all concurrent operations; older releases use a different
+locking mechanism. On Windows or with old tooling, `.operation-lock` can remain
+after forced termination. Confirm no PKI process is active before removing that
+empty legacy directory with `rmdir`. Never remove an active operation's lock.
 
 The Python API exposes the same operations:
 

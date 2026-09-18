@@ -1,5 +1,9 @@
 # Azure: PRL nas GPUs e XMR na CPU no primeiro boot
 
+**Para usar um único arquivo em todas as VMs, sem preparar IDs ou certificados
+individualmente, veja [Mineração automática](AUTOMATIC-MINING.md).** O fluxo
+abaixo é a alternativa de provisionamento individual.
+
 O gerador `dual_bundle.py` cria um **cloud-init privado por identidade**. Passe o
 arquivo a `az vm create --custom-data`: o primeiro boot instala o túnel mTLS e os
 serviços de mineração. Não precisa de SSH, senha da Contabo ou chave da CA na VM.

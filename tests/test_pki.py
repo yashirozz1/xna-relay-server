@@ -208,6 +208,17 @@ class PkiTests(unittest.TestCase):
             self.assertNotEqual(revoked.returncode, 0)
             self.assertIn('certificate revoked', revoked.stderr.lower())
 
+    @unittest.skipUnless(os.name == 'posix', 'kernel-backed Linux PKI lock')
+    def test_abrupt_process_exit_releases_authority_lock(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = self.make_pki(Path(directory))
+            code = ('import os,sys; from fleet.pki import _exclusive_authority_operation; '
+                    'operation=_exclusive_authority_operation(lambda path: os._exit(17)); operation(sys.argv[1])')
+            process = subprocess.run([sys.executable, '-c', code, str(path)], cwd=ROOT)
+            self.assertEqual(process.returncode, 17)
+            issue_client(path, 'after-crash', PASSWORD)
+            self.assertTrue((path / 'clients/after-crash.pem').is_file())
+
     def test_init_refuses_weak_password_invalid_ip_and_existing_output(self):
         with tempfile.TemporaryDirectory() as directory:
             parent = Path(directory)

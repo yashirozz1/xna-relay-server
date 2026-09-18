@@ -19,11 +19,24 @@ STATE_FILES = ("index.txt", "index.txt.attr", "serial", "crlnumber")
 
 
 def _exclusive_authority_operation(operation):
-    """Serialize authority changes across processes using an atomic mkdir."""
+    """Serialize authority changes; Linux releases its lock on process death."""
     @wraps(operation)
     def guarded(path, *args, **kwargs):
         authority = Path(path).absolute()
         lock = authority / '.operation-lock'
+        if os.name == 'posix':
+            import fcntl
+            if lock.exists():
+                raise RuntimeError('a legacy PKI operation lock exists; see docs/PKI.md')
+            descriptor = os.open(authority, os.O_RDONLY | os.O_DIRECTORY)
+            try:
+                try:
+                    fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except BlockingIOError as exc:
+                    raise RuntimeError('another PKI operation is active') from exc
+                return operation(path, *args, **kwargs)
+            finally:
+                os.close(descriptor)
         try:
             lock.mkdir(mode=0o700)
         except FileExistsError as exc:
